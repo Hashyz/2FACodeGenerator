@@ -1,4 +1,5 @@
 import streamlit as st
+from streamlit_autorefresh import st_autorefresh
 import pyotp
 import qrcode  # type: ignore
 import io
@@ -178,6 +179,8 @@ with st.sidebar:
             st.write(f"• {cat}: {count}")
 
 if menu == "🔢 My Codes":
+    st_autorefresh(interval=1000, key="codes_refresh")
+    
     st.markdown("## 🔢 Your 2FA Codes")
     
     time_remaining = get_time_remaining()
@@ -222,11 +225,38 @@ if menu == "🔢 My Codes":
                 with col3:
                     if st.button("📋", key=f"copy_{original_index}", help="Copy code"):
                         st.toast(f"Code {code} ready to use!")
+                    if st.button("✏️", key=f"edit_{original_index}", help="Edit account"):
+                        st.session_state.edit_index = original_index
                     if st.button("🗑️", key=f"delete_{original_index}", help="Delete account"):
                         st.session_state.accounts.pop(original_index)
                         st.rerun()
                     if st.button("📱", key=f"qr_{original_index}", help="Show QR"):
                         st.session_state[f"show_qr_{original_index}"] = not st.session_state.get(f"show_qr_{original_index}", False)
+                
+                if st.session_state.edit_index == original_index:
+                    with st.expander("✏️ Edit Account", expanded=True):
+                        edit_name = st.text_input("Account Name", value=account['name'], key=f"edit_name_{original_index}")
+                        edit_issuer = st.text_input("Service/Issuer", value=account.get('issuer', ''), key=f"edit_issuer_{original_index}")
+                        edit_category = st.selectbox(
+                            "Category",
+                            ["Work", "Personal", "Finance", "Social", "Gaming", "Other"],
+                            index=["Work", "Personal", "Finance", "Social", "Gaming", "Other"].index(account.get('category', 'Other')) if account.get('category') in ["Work", "Personal", "Finance", "Social", "Gaming", "Other"] else 5,
+                            key=f"edit_cat_{original_index}"
+                        )
+                        
+                        col_save, col_cancel = st.columns(2)
+                        with col_save:
+                            if st.button("💾 Save", key=f"save_{original_index}", use_container_width=True):
+                                st.session_state.accounts[original_index]['name'] = edit_name
+                                st.session_state.accounts[original_index]['issuer'] = edit_issuer
+                                st.session_state.accounts[original_index]['category'] = edit_category
+                                st.session_state.edit_index = None
+                                st.success("✅ Account updated!")
+                                st.rerun()
+                        with col_cancel:
+                            if st.button("❌ Cancel", key=f"cancel_{original_index}", use_container_width=True):
+                                st.session_state.edit_index = None
+                                st.rerun()
                 
                 if st.session_state.get(f"show_qr_{original_index}", False):
                     qr_base64 = generate_qr_code(account['secret'], account['name'], account.get('issuer', '2FA'))
