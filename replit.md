@@ -4,8 +4,9 @@
 A comprehensive Two-Factor Authentication (2FA) code generator built with Streamlit. This app generates TOTP (Time-based One-Time Password) codes, manages multiple accounts, and includes innovative security features.
 
 ## Features
-- **TOTP Code Generation**: Generate 6-digit codes that refresh every 30 seconds
-- **Account Management**: Add, delete, and organize multiple 2FA accounts
+- **Quick 2FA (Default Page)**: Instant code generation - just paste a secret key and see your live TOTP code with auto-refresh
+- **TOTP Code Generation**: Generate 6-digit codes that refresh every 30 seconds with live countdown
+- **Account Management**: Add, edit, delete, and organize multiple 2FA accounts
 - **QR Code Generation**: Create QR codes for easy account setup on other devices
 - **Category Organization**: Group accounts by Work, Personal, Finance, Social, Gaming, etc.
 - **Password Breach Checker**: Check if passwords have been exposed in data breaches using Have I Been Pwned API (k-anonymity model)
