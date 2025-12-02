@@ -156,11 +156,14 @@ def import_accounts(json_data):
 st.markdown('<h1 class="main-header">🔐 2FA Code Generator</h1>', unsafe_allow_html=True)
 st.markdown('<p style="text-align: center; color: #666; margin-bottom: 2rem;">Secure Time-Based One-Time Password Generator with Advanced Features</p>', unsafe_allow_html=True)
 
+if 'quick_secret' not in st.session_state:
+    st.session_state.quick_secret = ""
+
 with st.sidebar:
     st.markdown("### 📋 Menu")
     menu = st.radio(
         "Navigate",
-        ["🔢 My Codes", "➕ Add Account", "🔍 Breach Checker", "💾 Backup & Export", "📚 How It Works"],
+        ["⚡ Quick 2FA", "🔢 My Codes", "➕ Add Account", "🔍 Breach Checker", "💾 Backup & Export", "📚 How It Works"],
         label_visibility="collapsed"
     )
     
@@ -178,7 +181,81 @@ with st.sidebar:
         for cat, count in categories.items():
             st.write(f"• {cat}: {count}")
 
-if menu == "🔢 My Codes":
+if menu == "⚡ Quick 2FA":
+    st_autorefresh(interval=1000, key="quick_refresh")
+    
+    st.markdown("## ⚡ Quick 2FA Code Generator")
+    st.markdown("Paste your secret key below to instantly generate a TOTP code")
+    
+    secret_input = st.text_input(
+        "Secret Key (Base32)",
+        value=st.session_state.quick_secret,
+        placeholder="Enter or paste your 2FA secret key...",
+        help="This is the secret key provided when you set up 2FA (usually shown as a code or in a QR code)"
+    )
+    
+    if secret_input != st.session_state.quick_secret:
+        st.session_state.quick_secret = secret_input
+    
+    if secret_input:
+        clean_secret = secret_input.replace(" ", "").replace("-", "").upper()
+        
+        try:
+            code = generate_totp_code(clean_secret)
+            time_remaining = get_time_remaining()
+            progress = time_remaining / 30
+            
+            st.markdown("### Your Code")
+            st.markdown(f'<div class="code-display" style="font-size: 4rem; letter-spacing: 1rem;">{code}</div>', unsafe_allow_html=True)
+            
+            col1, col2 = st.columns([3, 1])
+            with col1:
+                st.progress(progress)
+            with col2:
+                st.markdown(f"**⏱️ {time_remaining}s**")
+            
+            st.markdown("---")
+            
+            with st.expander("💾 Save this as an account"):
+                save_name = st.text_input("Account Name", placeholder="e.g., my-service@email.com", key="quick_save_name")
+                save_issuer = st.text_input("Service/Issuer", placeholder="e.g., Google, GitHub", key="quick_save_issuer")
+                save_category = st.selectbox("Category", ["Work", "Personal", "Finance", "Social", "Gaming", "Other"], key="quick_save_cat")
+                
+                if st.button("💾 Save Account", use_container_width=True):
+                    if save_name:
+                        new_account = {
+                            'name': save_name,
+                            'secret': clean_secret,
+                            'issuer': save_issuer or "Unknown",
+                            'category': save_category,
+                            'created': datetime.now().isoformat()
+                        }
+                        st.session_state.accounts.append(new_account)
+                        st.success(f"✅ Account '{save_name}' saved!")
+                        st.balloons()
+                    else:
+                        st.warning("Please enter an account name")
+            
+            with st.expander("📱 Show QR Code"):
+                qr_base64 = generate_qr_code(clean_secret, "Quick 2FA", "2FA Generator")
+                st.image(f"data:image/png;base64,{qr_base64}", width=250)
+                st.caption("Scan this QR code to add to another authenticator app")
+                
+        except Exception as e:
+            st.error("❌ Invalid secret key. Please check the format and try again.")
+            st.caption("Secret keys are usually 16-32 characters using letters A-Z and numbers 2-7")
+    else:
+        st.info("👆 Enter a secret key above to generate your 2FA code instantly")
+        
+        st.markdown("### How to find your secret key:")
+        st.markdown("""
+        1. Go to the website/app where you want to enable 2FA
+        2. Look for "Set up authenticator" or "Enable 2FA"
+        3. You'll see a QR code and usually a text secret key
+        4. Copy the secret key and paste it above
+        """)
+
+elif menu == "🔢 My Codes":
     st_autorefresh(interval=1000, key="codes_refresh")
     
     st.markdown("## 🔢 Your 2FA Codes")
