@@ -744,6 +744,13 @@ elif menu == "📚 How It Works":
 
 st.markdown("---")
 st.markdown(
-    '<p style="text-align: center; color: #888; font-size: 0.9rem;">🔐 2FA Code Generator | Built with Streamlit | Your secrets never leave your device</p>',
+    '''
+    <div style="text-align: center; color: #888; font-size: 0.9rem;">
+        <p>🔐 2FA Code Generator | Built with Streamlit | Your secrets never leave your device</p>
+        <p style="margin-top: 5px;">
+            Inspired by <a href="https://github.com/Hashyz" target="_blank" style="color: #667eea; text-decoration: none;">@Hashyz</a>
+        </p>
+    </div>
+    ''',
     unsafe_allow_html=True
 )
