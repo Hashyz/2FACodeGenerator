@@ -40,8 +40,8 @@ streamlit run app.py --server.port=5000 --server.address=0.0.0.0 --server.headle
 - Password checking uses k-anonymity (password is never sent over the network)
 - Exported backups contain sensitive secret keys - store securely!
 
-## Credits
-- Inspired by [Hashyz](https://github.com/Hashyz)
+## Author
+- Built by [Hashyz](https://github.com/Hashyz)
 
 ## Recent Changes
 - Added Quick 2FA as default page with instant live code generation

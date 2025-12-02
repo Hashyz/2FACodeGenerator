@@ -55,9 +55,12 @@ streamlit run app.py --server.port=5000 --server.address=0.0.0.0 --server.headle
 - Quick 2FA runs entirely in your browser using JavaScript
 - Exported backups contain sensitive secret keys - store securely!
 
+## Author
+
+Built by [@Hashyz](https://github.com/Hashyz)
+
 ## Credits
 
-- Original concept inspired by [Hashyz](https://github.com/Hashyz)
 - Uses [jsSHA](https://github.com/Caligatio/jsSHA) for HMAC-SHA1 in browser
 - Password breach checking via [Have I Been Pwned](https://haveibeenpwned.com/)
 
