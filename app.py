@@ -185,69 +185,218 @@ if menu == "⚡ Quick 2FA":
     st_autorefresh(interval=1000, key="quick_refresh")
     
     st.markdown("## ⚡ Quick 2FA Code Generator")
-    st.markdown("Paste your secret key below to instantly generate a TOTP code")
+    st.markdown("Paste your secret key and the code updates **instantly** - no Enter needed!")
     
-    secret_input = st.text_input(
-        "Secret Key (Base32)",
-        value=st.session_state.quick_secret,
-        placeholder="Enter or paste your 2FA secret key...",
-        help="This is the secret key provided when you set up 2FA (usually shown as a code or in a QR code)"
-    )
+    import streamlit.components.v1 as components
     
-    if secret_input != st.session_state.quick_secret:
-        st.session_state.quick_secret = secret_input
+    current_secret = st.session_state.quick_secret
     
-    if secret_input:
-        clean_secret = secret_input.replace(" ", "").replace("-", "").upper()
+    live_input_component = f"""
+    <style>
+        * {{ box-sizing: border-box; }}
+        body {{ margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }}
+        .container {{ padding: 0; }}
+        .live-input {{
+            width: 100%;
+            padding: 14px 18px;
+            font-size: 20px;
+            font-family: 'Courier New', monospace;
+            letter-spacing: 3px;
+            border: 2px solid #667eea;
+            border-radius: 12px;
+            outline: none;
+            transition: all 0.3s ease;
+            background: linear-gradient(135deg, #f8f9ff 0%, #fff 100%);
+            text-transform: uppercase;
+        }}
+        .live-input:focus {{
+            border-color: #764ba2;
+            box-shadow: 0 0 20px rgba(102, 126, 234, 0.4);
+        }}
+        .live-input::placeholder {{
+            color: #999;
+            letter-spacing: 1px;
+            text-transform: none;
+        }}
+        .code-display {{
+            font-size: 56px;
+            font-weight: 700;
+            font-family: 'Courier New', monospace;
+            letter-spacing: 12px;
+            text-align: center;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 15px;
+            margin: 20px 0;
+            box-shadow: 0 4px 20px rgba(102, 126, 234, 0.5);
+            display: none;
+        }}
+        .code-display.visible {{ display: block; }}
+        .timer-container {{
+            display: none;
+            margin: 10px 0;
+        }}
+        .timer-container.visible {{ display: block; }}
+        .progress-bar {{
+            height: 10px;
+            background: #e0e0e0;
+            border-radius: 5px;
+            overflow: hidden;
+        }}
+        .progress-fill {{
+            height: 100%;
+            background: linear-gradient(90deg, #00d4aa, #667eea);
+            transition: width 1s linear;
+        }}
+        .timer-text {{
+            text-align: right;
+            font-weight: 600;
+            color: #667eea;
+            margin-top: 5px;
+        }}
+        .error-msg {{
+            color: #ff6b6b;
+            text-align: center;
+            padding: 10px;
+            display: none;
+        }}
+        .error-msg.visible {{ display: block; }}
+        .hint {{
+            color: #888;
+            font-size: 14px;
+            text-align: center;
+            margin-top: 15px;
+            display: block;
+        }}
+        .hint.hidden {{ display: none; }}
+    </style>
+    <div class="container">
+        <input 
+            type="text" 
+            class="live-input" 
+            id="secretInput"
+            placeholder="Paste your 2FA secret key here..."
+            value="{current_secret}"
+            autocomplete="off"
+            spellcheck="false"
+        />
+        <div class="code-display" id="codeDisplay">------</div>
+        <div class="timer-container" id="timerContainer">
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+            <div class="timer-text" id="timerText">30s</div>
+        </div>
+        <div class="error-msg" id="errorMsg">Invalid secret key format</div>
+        <div class="hint" id="hint">Enter a Base32 secret key to generate your 2FA code</div>
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsSHA/3.3.1/sha1.min.js"></script>
+    <script>
+        const BASE32_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
         
-        try:
-            code = generate_totp_code(clean_secret)
-            time_remaining = get_time_remaining()
-            progress = time_remaining / 30
+        function base32ToBytes(base32) {{
+            base32 = base32.replace(/[^A-Z2-7]/gi, '').toUpperCase();
+            if (base32.length === 0) return null;
             
-            st.markdown("### Your Code")
-            st.markdown(f'<div class="code-display" style="font-size: 4rem; letter-spacing: 1rem;">{code}</div>', unsafe_allow_html=True)
+            let bits = '';
+            for (let char of base32) {{
+                let val = BASE32_CHARS.indexOf(char);
+                if (val === -1) return null;
+                bits += val.toString(2).padStart(5, '0');
+            }}
             
-            col1, col2 = st.columns([3, 1])
-            with col1:
-                st.progress(progress)
-            with col2:
-                st.markdown(f"**⏱️ {time_remaining}s**")
-            
-            st.markdown("---")
-            
-            with st.expander("💾 Save this as an account"):
-                save_name = st.text_input("Account Name", placeholder="e.g., my-service@email.com", key="quick_save_name")
-                save_issuer = st.text_input("Service/Issuer", placeholder="e.g., Google, GitHub", key="quick_save_issuer")
-                save_category = st.selectbox("Category", ["Work", "Personal", "Finance", "Social", "Gaming", "Other"], key="quick_save_cat")
-                
-                if st.button("💾 Save Account", use_container_width=True):
-                    if save_name:
-                        new_account = {
-                            'name': save_name,
-                            'secret': clean_secret,
-                            'issuer': save_issuer or "Unknown",
-                            'category': save_category,
-                            'created': datetime.now().isoformat()
-                        }
-                        st.session_state.accounts.append(new_account)
-                        st.success(f"✅ Account '{save_name}' saved!")
-                        st.balloons()
-                    else:
-                        st.warning("Please enter an account name")
-            
-            with st.expander("📱 Show QR Code"):
-                qr_base64 = generate_qr_code(clean_secret, "Quick 2FA", "2FA Generator")
-                st.image(f"data:image/png;base64,{qr_base64}", width=250)
-                st.caption("Scan this QR code to add to another authenticator app")
-                
-        except Exception as e:
-            st.error("❌ Invalid secret key. Please check the format and try again.")
-            st.caption("Secret keys are usually 16-32 characters using letters A-Z and numbers 2-7")
-    else:
-        st.info("👆 Enter a secret key above to generate your 2FA code instantly")
+            const bytes = [];
+            for (let i = 0; i + 8 <= bits.length; i += 8) {{
+                bytes.push(parseInt(bits.substr(i, 8), 2));
+            }}
+            return new Uint8Array(bytes);
+        }}
         
-        st.markdown("### How to find your secret key:")
+        function generateTOTP(secret) {{
+            const key = base32ToBytes(secret);
+            if (!key || key.length === 0) return null;
+            
+            const epoch = Math.floor(Date.now() / 1000);
+            const timeStep = Math.floor(epoch / 30);
+            
+            const timeBytes = new Uint8Array(8);
+            let temp = timeStep;
+            for (let i = 7; i >= 0; i--) {{
+                timeBytes[i] = temp & 0xff;
+                temp = Math.floor(temp / 256);
+            }}
+            
+            const shaObj = new jsSHA("SHA-1", "UINT8ARRAY");
+            shaObj.setHMACKey(key, "UINT8ARRAY");
+            shaObj.update(timeBytes);
+            const hmac = shaObj.getHMAC("UINT8ARRAY");
+            
+            const offset = hmac[hmac.length - 1] & 0x0f;
+            const binary = ((hmac[offset] & 0x7f) << 24) |
+                          ((hmac[offset + 1] & 0xff) << 16) |
+                          ((hmac[offset + 2] & 0xff) << 8) |
+                          (hmac[offset + 3] & 0xff);
+            
+            const otp = binary % 1000000;
+            return otp.toString().padStart(6, '0');
+        }}
+        
+        function getTimeRemaining() {{
+            return 30 - (Math.floor(Date.now() / 1000) % 30);
+        }}
+        
+        function updateDisplay() {{
+            const input = document.getElementById('secretInput');
+            const codeDisplay = document.getElementById('codeDisplay');
+            const timerContainer = document.getElementById('timerContainer');
+            const progressFill = document.getElementById('progressFill');
+            const timerText = document.getElementById('timerText');
+            const errorMsg = document.getElementById('errorMsg');
+            const hint = document.getElementById('hint');
+            
+            const secret = input.value.replace(/[\\s-]/g, '').toUpperCase();
+            
+            if (secret.length > 0) {{
+                const code = generateTOTP(secret);
+                if (code) {{
+                    codeDisplay.textContent = code;
+                    codeDisplay.classList.add('visible');
+                    timerContainer.classList.add('visible');
+                    errorMsg.classList.remove('visible');
+                    hint.classList.add('hidden');
+                    
+                    const remaining = getTimeRemaining();
+                    progressFill.style.width = (remaining / 30 * 100) + '%';
+                    timerText.textContent = remaining + 's';
+                }} else {{
+                    codeDisplay.classList.remove('visible');
+                    timerContainer.classList.remove('visible');
+                    errorMsg.classList.add('visible');
+                    hint.classList.add('hidden');
+                }}
+            }} else {{
+                codeDisplay.classList.remove('visible');
+                timerContainer.classList.remove('visible');
+                errorMsg.classList.remove('visible');
+                hint.classList.remove('hidden');
+            }}
+        }}
+        
+        document.getElementById('secretInput').addEventListener('input', updateDisplay);
+        setInterval(updateDisplay, 1000);
+        updateDisplay();
+    </script>
+    """
+    
+    components.html(live_input_component, height=280)
+    
+    st.markdown("---")
+    
+    st.markdown("### Want to save this secret?")
+    st.markdown("Use the **Add Account** page to save it permanently.")
+    
+    with st.expander("📚 How to find your secret key"):
         st.markdown("""
         1. Go to the website/app where you want to enable 2FA
         2. Look for "Set up authenticator" or "Enable 2FA"
