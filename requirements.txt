@@ -1,7 +1,7 @@
-streamlit
-pyotp
-qrcode
-Pillow
-requests
-pandas
-streamlit-autorefresh
+streamlit>=1.30.0
+pyotp>=2.9.0
+qrcode>=7.4.0
+Pillow>=10.0.0
+requests>=2.31.0
+pandas>=2.0.0
+streamlit-autorefresh>=1.0.1
