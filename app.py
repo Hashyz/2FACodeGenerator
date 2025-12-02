@@ -1,5 +1,4 @@
 import streamlit as st
-from streamlit_autorefresh import st_autorefresh
 import pyotp
 import qrcode  # type: ignore
 import io
@@ -182,8 +181,6 @@ with st.sidebar:
             st.write(f"• {cat}: {count}")
 
 if menu == "⚡ Quick 2FA":
-    st_autorefresh(interval=1000, key="quick_refresh")
-    
     st.markdown("## ⚡ Quick 2FA Code Generator")
     st.markdown("Paste your secret key and the code updates **instantly** - no Enter needed!")
     
@@ -405,8 +402,6 @@ if menu == "⚡ Quick 2FA":
         """)
 
 elif menu == "🔢 My Codes":
-    st_autorefresh(interval=1000, key="codes_refresh")
-    
     st.markdown("## 🔢 Your 2FA Codes")
     
     time_remaining = get_time_remaining()
