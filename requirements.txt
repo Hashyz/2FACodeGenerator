@@ -1,0 +1,7 @@
+streamlit
+pyotp
+qrcode
+Pillow
+requests
+pandas
+streamlit-autorefresh
